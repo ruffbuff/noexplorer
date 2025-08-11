@@ -22,10 +22,32 @@ const defaultSettings: AppSettings = {
     enableSuggestions: true,
   },
   privacy: {
+    // Existing settings
     anonymizeTelemetry: true,
     enableCookies: false,
     trackSearchAnalytics: false,
     shareUsageData: false,
+    
+    // New anonymity settings
+    privacyLevel: 'enhanced',
+    useProxy: false,
+    proxyType: 'none',
+    proxyUrl: undefined,
+    rotateUserAgent: true,
+    randomizeRequestTiming: true,
+    enableFakeQueries: false,
+    
+    // DNS privacy
+    dnsResolver: 'cloudflare',
+    customDnsUrl: undefined,
+    enableDnsOverHttps: true,
+    enableDnsOverTls: false,
+    
+    // Traffic obfuscation
+    enableTrafficObfuscation: true,
+    minRequestDelay: 200, // 200ms
+    maxRequestDelay: 1000, // 1s
+    fakeQueryFrequency: 5, // 5 fake queries per hour
   },
   interface: {
     theme: 'system',

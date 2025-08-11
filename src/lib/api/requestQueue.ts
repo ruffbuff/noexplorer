@@ -152,8 +152,6 @@ export class RequestQueue {
         const jitter = Math.random() * 0.1 * delay;
         const totalDelay = delay + jitter;
 
-        console.warn(`Retrying request ${request.id} after ${totalDelay}ms (attempt ${request.retryCount}/${this.config.maxRetries})`);
-
         setTimeout(() => {
           this.queue.unshift(request); // Re-add to front of queue
           this.processQueue();
@@ -176,6 +174,14 @@ export class RequestQueue {
   // Check if error should be retried
   private shouldRetry(error: Error): boolean {
     const message = error.message.toLowerCase();
+    
+    // Don't retry CORS errors or client errors
+    if (message.includes('cors') || 
+        message.includes('cross-origin') ||
+        message.includes('http 4') ||
+        message.includes('forbidden')) {
+      return false;
+    }
     
     // Retry on network errors, timeouts, and 5xx errors
     return (

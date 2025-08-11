@@ -1,11 +1,18 @@
+import React, { lazy, Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import SearchBar from "@/components/SearchBar";
 import SignatureGlow from "@/components/SignatureGlow";
 import TextType from "@/components/TextType";
-import GlitchBackground from "@/components/GlitchBackground";
 import { useSEO } from "@/hooks/use-seo";
+import { useNetworkStatus } from "@/store/appStore";
+
+// Lazy load heavy components for better performance
+const GlitchBackground = lazy(() => import("@/components/GlitchBackground"));
 
 const Index = () => {
+  const { networkStatus, connectionQuality } = useNetworkStatus();
+  
   useSEO({
     title: "Noexplorer",
     description:
@@ -17,7 +24,9 @@ const Index = () => {
     <main className="relative w-full px-4 sm:px-6" style={{ minHeight: 'calc(100vh - 120px)' }}>
       {/* Глитч-фон на всю главную страницу (кроме футера) */}
       <div className="absolute inset-0 opacity-30 pointer-events-none z-0">
-        <GlitchBackground />
+        <Suspense fallback={<div className="w-full h-full bg-gradient-to-br from-transparent via-primary/5 to-transparent" />}>
+          <GlitchBackground />
+        </Suspense>
       </div>
       
       <section className="relative overflow-hidden z-10 h-full flex flex-col justify-center">
@@ -49,12 +58,32 @@ const Index = () => {
             <SignatureGlow>
               <Card className="p-3 sm:p-4 md:p-6 bg-background/80 glass shadow-elevated backdrop-blur-sm">
                 <CardContent className="p-0">
-                  <SearchBar autoFocus />
+                  <SearchBar autoFocus={window.innerWidth > 768} />
                 </CardContent>
                 <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground">
                   <span className="rounded-full bg-secondary px-2 py-1">No ads</span>
                   <span className="rounded-full bg-secondary px-2 py-1">No tracking</span>
                   <span className="rounded-full bg-secondary px-2 py-1">Open-source</span>
+                  
+                  {/* Network status indicator */}
+                  {networkStatus.online ? (
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${
+                        connectionQuality > 0.7 
+                          ? 'text-green-600 border-green-300' 
+                          : connectionQuality > 0.4 
+                          ? 'text-yellow-600 border-yellow-300' 
+                          : 'text-red-600 border-red-300'
+                      }`}
+                    >
+                      Search ready
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-xs">
+                      Offline
+                    </Badge>
+                  )}
                 </div>
               </Card>
             </SignatureGlow>

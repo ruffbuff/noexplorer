@@ -22,12 +22,43 @@ export interface SearchSettings {
   enableSuggestions: boolean;
 }
 
+// Proxy types for anonymization
+export type ProxyType = 'none' | 'http' | 'socks5' | 'tor' | 'auto';
+
+// Privacy levels
+export type PrivacyLevel = 'standard' | 'enhanced' | 'maximum' | 'paranoid';
+
+// DNS resolver options
+export type DnsResolver = 'system' | 'cloudflare' | 'quad9' | 'opendns' | 'custom';
+
 // Privacy settings
 export interface PrivacySettings {
+  // Existing settings
   anonymizeTelemetry: boolean;
   enableCookies: boolean;
   trackSearchAnalytics: boolean;
   shareUsageData: boolean;
+  
+  // New anonymity settings
+  privacyLevel: PrivacyLevel;
+  useProxy: boolean;
+  proxyType: ProxyType;
+  proxyUrl?: string; // For custom proxy
+  rotateUserAgent: boolean;
+  randomizeRequestTiming: boolean;
+  enableFakeQueries: boolean;
+  
+  // DNS privacy
+  dnsResolver: DnsResolver;
+  customDnsUrl?: string;
+  enableDnsOverHttps: boolean;
+  enableDnsOverTls: boolean;
+  
+  // Traffic obfuscation
+  enableTrafficObfuscation: boolean;
+  minRequestDelay: number; // milliseconds
+  maxRequestDelay: number; // milliseconds
+  fakeQueryFrequency: number; // queries per hour
 }
 
 // UI/Interface settings

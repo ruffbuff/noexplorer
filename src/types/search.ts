@@ -8,6 +8,7 @@ export interface SearchResult {
   timestamp: Date;
   relevance: number;
   type: 'web' | 'image' | 'news';
+  thumbnail?: string; // URL to thumbnail image
   metadata?: Record<string, any>;
 }
 

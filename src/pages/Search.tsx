@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Wifi, WifiOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import SearchBar from "@/components/SearchBar";
+import ResultThumbnail from "@/components/ResultThumbnail";
 import { useSEO } from "@/hooks/use-seo";
 import { useSearch } from "@/hooks/useSearch";
 import { usePrivacySettings } from "@/store/settingsStore";
@@ -143,7 +144,7 @@ const Search = () => {
             <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div
                 onClick={() => handleResultClick(result.url)}
-                className="block w-full text-left group"
+                className="flex gap-3 w-full text-left group"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -153,29 +154,42 @@ const Search = () => {
                   }
                 }}
               >
-                <h3 className="text-base sm:text-lg font-semibold group-hover:underline text-blue-600 dark:text-blue-400 mb-1 cursor-pointer line-clamp-2">
-                  {result.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 mb-2 break-all truncate">
-                  {result.url}
-                </p>
-                <p className="text-sm text-foreground/80 leading-relaxed line-clamp-3 sm:line-clamp-4">
-                  {result.snippet}
-                </p>
-                <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 flex-wrap">
-                  <Badge variant="outline" className="text-xs">
-                    {result.domain}
-                  </Badge>
-                  {result.metadata?.source && (
-                    <Badge variant="secondary" className="text-xs">
-                      {result.metadata.source}
+                {/* Thumbnail */}
+                {result.thumbnail && (
+                  <ResultThumbnail
+                    src={result.thumbnail}
+                    alt={result.title}
+                    domain={result.domain}
+                    className="mt-1"
+                  />
+                )}
+                
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold group-hover:underline text-blue-600 dark:text-blue-400 mb-1 cursor-pointer line-clamp-2">
+                    {result.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 mb-2 break-all truncate">
+                    {result.url}
+                  </p>
+                  <p className="text-sm text-foreground/80 leading-relaxed line-clamp-3 sm:line-clamp-4">
+                    {result.snippet}
+                  </p>
+                  <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 flex-wrap">
+                    <Badge variant="outline" className="text-xs">
+                      {result.domain}
                     </Badge>
-                  )}
-                  {result.metadata?.isMock && (
-                    <Badge variant="destructive" className="text-xs">
-                      Mock data
-                    </Badge>
-                  )}
+                    {result.metadata?.source && (
+                      <Badge variant="secondary" className="text-xs">
+                        {result.metadata.source}
+                      </Badge>
+                    )}
+                    {result.metadata?.isMock && (
+                      <Badge variant="destructive" className="text-xs">
+                        Mock data
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

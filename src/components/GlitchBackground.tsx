@@ -1,17 +1,9 @@
-import { useEffect } from "react";
+import React from "react";
 import { useTheme } from "next-themes";
 import LetterGlitch from "./LetterGlitch";
 
 const GlitchBackground = () => {
-  console.log("🔮 GlitchBackground component rendering...");
   const { theme } = useTheme();
-  
-  useEffect(() => {
-    console.log("✅ GlitchBackground mounted");
-    return () => {
-      console.log("❌ GlitchBackground unmounting");
-    };
-  }, []);
 
   // Адаптивные цвета в зависимости от темы
   const getThemeColors = () => {
@@ -39,14 +31,13 @@ const GlitchBackground = () => {
       </div>
     );
   } catch (error) {
-    console.error("❌ Error in GlitchBackground:", error);
     return (
       <div style={{ 
         width: '100%', 
         height: '100%',
-        backgroundColor: 'rgba(255, 0, 0, 0.1)',
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
       }}>
-        Glitch background failed to load
+        {/* Fallback for glitch background */}
       </div>
     );
   }
