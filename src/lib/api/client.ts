@@ -45,28 +45,17 @@ class HTTPClient {
 
   // Build URL with parameters
   private buildURL(endpoint: string, params?: Record<string, any>): string {
-    let fullURL: string;
-    
-    // Handle relative baseURL in production (e.g., "/api")
-    if (this.baseURL.startsWith('/')) {
-      // Use current domain with relative baseURL
-      fullURL = `${window.location.origin}${this.baseURL}${endpoint}`;
-    } else {
-      // Use absolute baseURL (development or custom)
-      fullURL = new URL(endpoint, this.baseURL).toString();
-    }
+    const url = new URL(endpoint, this.baseURL);
     
     if (params) {
-      const url = new URL(fullURL);
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           url.searchParams.append(key, String(value));
         }
       });
-      return url.toString();
     }
     
-    return fullURL;
+    return url.toString();
   }
 
   // Generate cache key

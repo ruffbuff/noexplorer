@@ -90,7 +90,7 @@ export interface APIEndpoints {
 export const DEFAULT_API_CONFIG = {
   baseURL: process.env.NODE_ENV === 'development' 
     ? 'http://localhost:8000/api' 
-    : '/api',
+    : 'https://api.mwmbl.org',
   timeout: 10000,
   retries: 3,
   headers: {
