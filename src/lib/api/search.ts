@@ -117,8 +117,14 @@ export class SearchAPI {
       for (const source of searchSources) {
         for (const endpoint of source.endpoints) {
           try {
+            // Handle relative URLs for Vercel API
+            let requestUrl = endpoint;
+            if (endpoint.startsWith('/api/') && typeof window !== 'undefined') {
+              requestUrl = `${window.location.origin}${endpoint}`;
+            }
+            
             const client = this.getClient();
-            const data = await client.request(endpoint, {
+            const data = await client.request(requestUrl, {
               method: 'GET',
               headers: {
                 'Accept': 'application/json',
