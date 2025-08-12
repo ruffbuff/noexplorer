@@ -1,8 +1,8 @@
 // Network status monitoring utility
 export interface NetworkStatus {
   online: boolean;
-  connectionType: string;
-  effectiveType: string;
+  connectionType: 'wifi' | 'cellular' | 'ethernet' | 'unknown';
+  effectiveType: 'slow-2g' | '2g' | '3g' | '4g' | 'unknown';
   downlink: number;
   rtt: number;
   saveData: boolean;
@@ -34,10 +34,44 @@ export class NetworkMonitor {
                        (navigator as any).mozConnection || 
                        (navigator as any).webkitConnection;
 
+    // Map browser connection types to our defined types
+    const mapConnectionType = (type: string): 'wifi' | 'cellular' | 'ethernet' | 'unknown' => {
+      if (!type) return 'unknown';
+      switch (type.toLowerCase()) {
+        case 'wifi':
+        case 'bluetooth':
+          return 'wifi';
+        case 'cellular':
+        case '3g':
+        case '4g':
+        case '5g':
+          return 'cellular';
+        case 'ethernet':
+        case 'wired':
+          return 'ethernet';
+        default:
+          return 'unknown';
+      }
+    };
+
+    // Map effective types to our defined types
+    const mapEffectiveType = (type: string): 'slow-2g' | '2g' | '3g' | '4g' | 'unknown' => {
+      if (!type) return 'unknown';
+      switch (type) {
+        case 'slow-2g':
+        case '2g':
+        case '3g':
+        case '4g':
+          return type;
+        default:
+          return 'unknown';
+      }
+    };
+
     return {
       online: navigator.onLine,
-      connectionType: connection?.type || 'unknown',
-      effectiveType: connection?.effectiveType || 'unknown',
+      connectionType: mapConnectionType(connection?.type),
+      effectiveType: mapEffectiveType(connection?.effectiveType),
       downlink: connection?.downlink || 0,
       rtt: connection?.rtt || 0,
       saveData: connection?.saveData || false,
@@ -225,6 +259,9 @@ export class NetworkMonitor {
         break;
       case 'slow-2g':
         score += 0.05;
+        break;
+      case 'unknown':
+        // No adjustment for unknown
         break;
     }
 

@@ -30,7 +30,8 @@ const ResultThumbnail = ({ src, alt, domain, className }: ResultThumbnailProps) 
     
     observer.observe(node);
     
-    return () => observer.disconnect();
+    // Cleanup function should be stored separately, not returned
+    node.addEventListener('cleanup', () => observer.disconnect());
   }, [handleIntersection]);
 
   const handleLoad = useCallback(() => {

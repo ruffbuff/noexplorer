@@ -61,7 +61,7 @@ export interface SearchState {
 // Search actions
 export interface SearchActions {
   setQuery: (query: string) => void;
-  search: (query: string, page?: number) => Promise<void>;
+  search: (query: string, page?: number, limit?: number) => Promise<void>;
   clearResults: () => void;
   clearError: () => void;
   setFilters: (filters: Partial<SearchFilters>) => void;

@@ -219,7 +219,7 @@ const PrivacyDashboard = () => {
                   {privacy.enableDnsOverHttps ? "Active" : "Inactive"}
                 </Badge>
               </div>
-              {privacy.useProxy && (
+              {privacy.useProxy && privacy.proxyType && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Proxy ({privacy.proxyType.toUpperCase()})</span>
                   <Badge variant="default">Active</Badge>

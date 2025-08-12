@@ -17,7 +17,7 @@ export interface Toast {
 export interface NetworkStatus {
   online: boolean;
   connectionType?: 'wifi' | 'cellular' | 'ethernet' | 'unknown';
-  effectiveType?: 'slow-2g' | '2g' | '3g' | '4g';
+  effectiveType?: 'slow-2g' | '2g' | '3g' | '4g' | 'unknown';
 }
 
 // API status

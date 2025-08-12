@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Shield, Eye, EyeOff, Lock, Globe, Zap } from 'lucide-react';
@@ -11,7 +11,8 @@ interface PrivacyIndicatorProps {
   compact?: boolean;
 }
 
-const PrivacyIndicator = ({ className, showText = true, compact = false }: PrivacyIndicatorProps) => {
+const PrivacyIndicator = forwardRef<HTMLDivElement, PrivacyIndicatorProps>(
+  ({ className, showText = true, compact = false }, ref) => {
   const { privacy } = usePrivacySettings();
 
   // Calculate privacy score (0-100)
@@ -52,7 +53,7 @@ const PrivacyIndicator = ({ className, showText = true, compact = false }: Priva
     if (privacy.rotateUserAgent) features.push('User-Agent Rotation');
     if (privacy.randomizeRequestTiming) features.push('Request Timing Randomization');
     if (privacy.enableTrafficObfuscation) features.push('Traffic Obfuscation');
-    if (privacy.useProxy) features.push(`${privacy.proxyType.toUpperCase()} Proxy`);
+    if (privacy.useProxy && privacy.proxyType) features.push(`${privacy.proxyType.toUpperCase()} Proxy`);
     if (privacy.enableDnsOverHttps) features.push('DNS-over-HTTPS');
     if (privacy.enableFakeQueries) features.push('Fake Query Generation');
     if (!privacy.enableCookies) features.push('Cookie Blocking');
@@ -77,13 +78,15 @@ const PrivacyIndicator = ({ className, showText = true, compact = false }: Priva
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge 
-              variant={badgeVariant}
-              className={cn("flex items-center gap-1 cursor-help", className)}
-            >
-              <Icon className="h-3 w-3" />
-              {score}%
-            </Badge>
+            <div ref={ref}>
+              <Badge 
+                variant={badgeVariant}
+                className={cn("flex items-center gap-1 cursor-help", className)}
+              >
+                <Icon className="h-3 w-3" />
+                {score}%
+              </Badge>
+            </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-sm">
             <div className="space-y-2">
@@ -111,23 +114,25 @@ const PrivacyIndicator = ({ className, showText = true, compact = false }: Priva
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge 
-            variant={badgeVariant}
-            className={cn(
-              "flex items-center gap-1.5 cursor-help px-2.5 py-1",
-              className
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            {showText && (
-              <span className="text-xs font-medium">
-                Privacy: {privacyInfo.level}
+          <div ref={ref}>
+            <Badge 
+              variant={badgeVariant}
+              className={cn(
+                "flex items-center gap-1.5 cursor-help px-2.5 py-1",
+                className
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {showText && (
+                <span className="text-xs font-medium">
+                  Privacy: {privacyInfo.level}
+                </span>
+              )}
+              <span className="text-xs opacity-75">
+                {score}%
               </span>
-            )}
-            <span className="text-xs opacity-75">
-              {score}%
-            </span>
-          </Badge>
+            </Badge>
+          </div>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-md">
           <div className="space-y-3">
@@ -162,6 +167,8 @@ const PrivacyIndicator = ({ className, showText = true, compact = false }: Priva
       </Tooltip>
     </TooltipProvider>
   );
-};
+});
+
+PrivacyIndicator.displayName = 'PrivacyIndicator';
 
 export default PrivacyIndicator;

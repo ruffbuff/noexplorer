@@ -11,7 +11,7 @@ import { DEFAULT_API_CONFIG } from '@/types/api';
 import { requestQueue } from './requestQueue';
 import { getRandomUserAgent, generateMatchingHeaders } from '@/lib/privacy/userAgentRotator';
 import { addRandomDelay, addTrafficPadding, generateDecoyHeaders } from '@/lib/privacy/trafficObfuscation';
-import { usePrivacySettings } from '@/store/settingsStore';
+import { getPrivacySettingsSync } from '@/lib/privacy/settingsHelper';
 
 interface PrivacyRequestConfig {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -73,6 +73,10 @@ class PrivacyHTTPClient {
 
     // Get privacy settings from store
     const privacySettings = this.getPrivacySettings();
+    
+    // Debug: Log request info (can be disabled later)
+    // console.log('Privacy settings:', privacySettings);
+    // console.log('Making request to:', endpoint);
 
     // Build URL
     const url = this.buildURL(endpoint, params);
@@ -130,17 +134,18 @@ class PrivacyHTTPClient {
     try {
       let response: Response;
 
-      if (useQueue && requestQueue) {
-        // Use request queue for rate limiting
-        response = await requestQueue.addRequest(async () => {
-          return this.performFetch(url, {
-            method,
-            headers: finalHeaders,
-            body: finalData ? JSON.stringify(finalData) : undefined,
-            signal: controller.signal,
-          });
-        }, priority);
-      } else {
+      // Temporarily disable request queue to fix the issue
+      // TODO: Fix requestQueue integration later
+      // if (useQueue && requestQueue) {
+      //   response = await requestQueue.addRequest(async () => {
+      //     return this.performFetch(url, {
+      //       method,
+      //       headers: finalHeaders,
+      //       body: finalData ? JSON.stringify(finalData) : undefined,
+      //       signal: controller.signal,
+      //     });
+      //   }, priority);
+      // } else {
         // Direct request
         response = await this.performFetch(url, {
           method,
@@ -148,12 +153,16 @@ class PrivacyHTTPClient {
           body: finalData ? JSON.stringify(finalData) : undefined,
           signal: controller.signal,
         });
-      }
+      // }
 
       clearTimeout(timeoutId);
 
       // Parse response
       const responseData = await this.parseResponse<T>(response);
+      
+      // Debug: Log response (can be disabled later)
+      // console.log('Response received:', response.status, response.statusText);
+      // console.log('Response data:', responseData);
 
       // Cache successful GET responses
       if (cache && method === 'GET' && response.ok) {
@@ -165,12 +174,16 @@ class PrivacyHTTPClient {
     } catch (error) {
       clearTimeout(timeoutId);
       
+      // Debug: Log error
+      console.error('Privacy client error:', error);
+      
       if (controller.signal.aborted) {
         throw new TimeoutError('Request timeout');
       }
 
       // Retry logic for retryable errors
       if (retries > 0 && isRetryableError(error as Error)) {
+        console.log('Retrying request, attempts left:', retries - 1);
         return this.request(endpoint, {
           ...config,
           retries: retries - 1,
@@ -182,7 +195,11 @@ class PrivacyHTTPClient {
         throw new NetworkError('Network connection failed');
       }
 
-      throw createAPIError(error as Error, endpoint);
+      // Convert error to appropriate API error
+      if (error instanceof Error) {
+        throw new APIError(error.message, 'REQUEST_FAILED', 500);
+      }
+      throw new APIError('Unknown error occurred', 'UNKNOWN_ERROR', 500);
     }
   }
 
@@ -209,8 +226,8 @@ class PrivacyHTTPClient {
       const errorText = await response.text().catch(() => 'Unknown error');
       throw new APIError(
         `HTTP ${response.status}: ${response.statusText}`,
-        response.status,
-        errorText
+        'HTTP_ERROR',
+        response.status
       );
     }
 
@@ -229,21 +246,7 @@ class PrivacyHTTPClient {
 
   // Get privacy settings (handles cases where store might not be available)
   private getPrivacySettings() {
-    try {
-      return usePrivacySettings().privacy;
-    } catch (error) {
-      // Fallback to default privacy settings if store is not available
-      return {
-        privacyLevel: 'enhanced' as const,
-        rotateUserAgent: true,
-        randomizeRequestTiming: true,
-        enableTrafficObfuscation: true,
-        useProxy: false,
-        proxyType: 'none' as const,
-        minRequestDelay: 200,
-        maxRequestDelay: 1000,
-      };
-    }
+    return getPrivacySettingsSync();
   }
 
   // Get delay distribution based on privacy level

@@ -8,7 +8,7 @@ import {
   MWMBLSearchResponse, 
   HealthCheckResponse 
 } from '@/types/api';
-// Note: We can't use React hooks in a class, so we'll handle privacy settings differently
+import { getPrivacySettingsSync } from '@/lib/privacy/settingsHelper';
 
 // Transform MWMBL result to our SearchResult format
 function transformMWMBLResult(result: any, index: number): SearchResult {
@@ -35,9 +35,27 @@ const resultsCache = new Map<string, any[]>();
 export class SearchAPI {
   // Get the appropriate API client based on privacy settings
   private getClient() {
-    // For now, always use privacy client to ensure privacy features are available
-    // In the future, this could check localStorage directly or receive settings as parameter
-    return privacyClient;
+    try {
+      const privacy = getPrivacySettingsSync();
+      
+      // Use privacy client if any privacy features are enabled
+      const shouldUsePrivacyClient = 
+        privacy.privacyLevel !== 'standard' || 
+        privacy.rotateUserAgent || 
+        privacy.randomizeRequestTiming || 
+        privacy.enableTrafficObfuscation ||
+        privacy.useProxy ||
+        privacy.enableDnsOverHttps;
+        
+      if (shouldUsePrivacyClient) {
+        return privacyClient;
+      }
+    } catch (error) {
+      console.warn('Failed to get privacy settings, using standard client:', error);
+    }
+    
+    // Fallback to standard client
+    return apiClient;
   }
 
   // Main search function
@@ -99,7 +117,7 @@ export class SearchAPI {
               },
               timeout: 8000,
               priority: 'high', // Search requests have high priority
-              useQueue: true,
+              useQueue: false, // Disable queue until fixed
               cache: false, // Don't cache search API responses
             });
             
@@ -150,7 +168,13 @@ export class SearchAPI {
             return String(value);
           }
           if (Array.isArray(value)) {
-            return value.map(item => extractText(item)).join('').trim();
+            // Handle MWMBL format: array of {value: string, is_bold: boolean}
+            return value.map(item => {
+              if (typeof item === 'object' && item !== null && 'value' in item) {
+                return item.value || '';
+              }
+              return extractText(item);
+            }).join('').trim();
           }
           if (typeof value === 'object') {
             if (value.value !== undefined) {
@@ -168,12 +192,54 @@ export class SearchAPI {
         };
 
         // Handle MWMBL result format
-        const title = extractText(result.title || result.name || result.heading) || 'Untitled';
-        const url = String(result.url || result.link || '');
-        const snippet = extractText(result.extract || result.snippet || result.description || result.content) || '';
+        let title = 'Untitled';
+        let snippet = '';
         
-        // Extract thumbnail image
-        const thumbnail = result.image_url || result.thumbnail || result.imageUrl || undefined;
+        // Use extractText for all title processing
+        title = extractText(result.title || result.name || result.heading) || 'Untitled';
+        
+        const url = String(result.url || result.link || '');
+        
+        // Use extractText for all snippet processing  
+        snippet = extractText(result.extract || result.snippet || result.description || result.content) || '';
+        
+        // Extract thumbnail image from various possible fields
+        let thumbnail = result.image_url || result.thumbnail || result.imageUrl || result.image || undefined;
+        
+        // Enhanced thumbnail logic for different domains
+        try {
+          const parsedUrl = new URL(url);
+          const domain = parsedUrl.hostname;
+          
+          if (!thumbnail) {
+            // Wikipedia - use page preview API
+            if (domain.includes('wikipedia.org')) {
+              const match = url.match(/\/wiki\/([^?#]+)/);
+              if (match) {
+                const pageTitle = decodeURIComponent(match[1]);
+                thumbnail = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}?thumbnail=true`;
+              }
+            }
+            // GitHub - use avatar or repo image
+            else if (domain.includes('github.com')) {
+              const pathParts = parsedUrl.pathname.split('/').filter(Boolean);
+              if (pathParts.length >= 2) {
+                thumbnail = `https://github.com/${pathParts[0]}.png?size=200`;
+              }
+            }
+            // YouTube - extract video thumbnail
+            else if (domain.includes('youtube.com') || domain.includes('youtu.be')) {
+              const videoMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+              if (videoMatch) {
+                thumbnail = `https://img.youtube.com/vi/${videoMatch[1]}/hqdefault.jpg`;
+              }
+            }
+            // For major sites, just skip thumbnails due to CORS issues with favicon services
+            // Focus on sites that provide direct API access or don't have CORS restrictions
+          }
+        } catch (e) {
+          // Invalid URL, skip thumbnail generation
+        }
         
         // Extract domain safely
         let domain = 'unknown';
@@ -185,7 +251,7 @@ export class SearchAPI {
           // Invalid URL
         }
         
-        return {
+        const transformedResult = {
           id: `${result._source?.toLowerCase() || 'unknown'}-${url}-${index}`,
           title,
           url,
@@ -202,6 +268,9 @@ export class SearchAPI {
             raw: result,
           },
         };
+        
+        
+        return transformedResult;
       }).filter(result => {
         if (!result.url || !result.url.startsWith('http')) {
           return false;
