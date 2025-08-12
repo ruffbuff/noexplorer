@@ -103,7 +103,7 @@ const SettingsSheet = ({ children }: SettingsSheetProps) => {
                 <Label>Privacy Level</Label>
                 <Select 
                   value={privacy.privacyLevel} 
-                  onValueChange={(value: any) => updatePrivacySettings({ privacyLevel: value })}
+                  onValueChange={(value) => updatePrivacySettings({ privacyLevel: value as any })}
                 >
                   <SelectTrigger className="mt-2">
                     <SelectValue />
@@ -186,7 +186,7 @@ const SettingsSheet = ({ children }: SettingsSheetProps) => {
                       <Label>Proxy Type</Label>
                       <Select 
                         value={privacy.proxyType} 
-                        onValueChange={(value: any) => updatePrivacySettings({ proxyType: value })}
+                        onValueChange={(value) => updatePrivacySettings({ proxyType: value as any })}
                       >
                         <SelectTrigger className="mt-2">
                           <SelectValue />
@@ -225,7 +225,7 @@ const SettingsSheet = ({ children }: SettingsSheetProps) => {
                   <Label>DNS Resolver</Label>
                   <Select 
                     value={privacy.dnsResolver} 
-                    onValueChange={(value: any) => updatePrivacySettings({ dnsResolver: value })}
+                    onValueChange={(value) => updatePrivacySettings({ dnsResolver: value as any })}
                   >
                     <SelectTrigger className="mt-2">
                       <SelectValue />

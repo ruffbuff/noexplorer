@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Settings2 } from "lucide-react";
 import SettingsSheet from "@/components/settings/SettingsSheet";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import PrivacyIndicator from "@/components/PrivacyIndicator";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -42,6 +43,7 @@ export const Navbar = () => {
           </nav>
         </div>
         <div className="flex items-center gap-2">
+          <PrivacyIndicator compact showText={false} className="hidden sm:flex" />
           <ThemeToggle />
           <Separator orientation="vertical" className="h-6" />
           <SettingsSheet>

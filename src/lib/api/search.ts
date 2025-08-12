@@ -8,7 +8,7 @@ import {
   MWMBLSearchResponse, 
   HealthCheckResponse 
 } from '@/types/api';
-import { usePrivacySettings } from '@/store/settingsStore';
+// Note: We can't use React hooks in a class, so we'll handle privacy settings differently
 
 // Transform MWMBL result to our SearchResult format
 function transformMWMBLResult(result: any, index: number): SearchResult {
@@ -35,22 +35,9 @@ const resultsCache = new Map<string, any[]>();
 export class SearchAPI {
   // Get the appropriate API client based on privacy settings
   private getClient() {
-    try {
-      const { privacy } = usePrivacySettings();
-      
-      // Use privacy client if privacy features are enabled
-      if (privacy.privacyLevel !== 'standard' || 
-          privacy.rotateUserAgent || 
-          privacy.randomizeRequestTiming || 
-          privacy.enableTrafficObfuscation) {
-        return privacyClient;
-      }
-    } catch (error) {
-      // Fallback to privacy client if store is unavailable
-      return privacyClient;
-    }
-    
-    return apiClient;
+    // For now, always use privacy client to ensure privacy features are available
+    // In the future, this could check localStorage directly or receive settings as parameter
+    return privacyClient;
   }
 
   // Main search function

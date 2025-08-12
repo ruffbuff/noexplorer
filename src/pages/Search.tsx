@@ -225,10 +225,10 @@ const Search = () => {
               <WifiOff className="h-3 w-3" />
             )}
             <span className="hidden sm:inline">
-              {privacy.localOnly ? "Local mode" : "Online mode"}
+              {privacy.privacyLevel === 'paranoid' ? "Maximum Privacy" : "Enhanced Privacy"}
             </span>
             <span className="sm:hidden">
-              {privacy.localOnly ? "Local" : "Online"}
+              {privacy.privacyLevel === 'paranoid' ? "Max" : "Enhanced"}
             </span>
           </Badge>
           {!networkStatus.online && (
