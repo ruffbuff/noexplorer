@@ -151,19 +151,15 @@ const LetterGlitch = ({
   const resizeCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) {
-      console.log("❌ Canvas ref is null in resize");
       return;
     }
     const parent = canvas.parentElement;
     if (!parent) {
-      console.log("❌ Parent element is null");
       return;
     }
 
     const dpr = window.devicePixelRatio || 1;
     const rect = parent.getBoundingClientRect();
-    
-    console.log("📏 Canvas parent rect:", rect.width, "x", rect.height);
 
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
@@ -176,14 +172,12 @@ const LetterGlitch = ({
     }
 
     const { columns, rows } = calculateGrid(rect.width, rect.height);
-    console.log("🔢 Grid calculated:", columns, "cols x", rows, "rows =", columns * rows, "letters");
     initializeLetters(columns, rows);
     drawLetters();
   };
 
   const drawLetters = () => {
     if (!context.current || letters.current.length === 0) {
-      console.log("⚠️ Cannot draw letters:", !context.current ? "no context" : "no letters");
       return;
     }
     const ctx = context.current;
@@ -195,7 +189,6 @@ const LetterGlitch = ({
     // Only log once every second to reduce spam
     const now = Date.now();
     if (!lastGlitchTime.current || now - lastGlitchTime.current > 1000) {
-      console.log("✏️ Drawing", letters.current.length, "letters on", width, "x", height, "canvas");
     }
 
     letters.current.forEach((letter, index) => {
@@ -268,23 +261,17 @@ const LetterGlitch = ({
   };
 
   useEffect(() => {
-    console.log("🔮 LetterGlitch initializing...");
     const canvas = canvasRef.current;
     if (!canvas) {
-      console.log("❌ Canvas ref is null");
       return;
     }
 
-    console.log("🎨 Getting canvas context...");
     context.current = canvas.getContext("2d");
     if (!context.current) {
-      console.log("❌ Failed to get canvas context");
       return;
     }
     
-    console.log("📐 Resizing canvas...");
     resizeCanvas();
-    console.log("🚀 Starting animation...");
     animate();
 
     let resizeTimeout: NodeJS.Timeout;

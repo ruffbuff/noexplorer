@@ -75,7 +75,6 @@ export class CircuitBreaker {
     // Check if we should open the circuit
     if (stats.failures >= this.config.failureThreshold) {
       stats.state = 'open';
-      console.warn(`Circuit breaker opened for endpoint: ${endpoint}`);
     } else if (stats.state === 'half-open') {
       // If we were in half-open and failed, go back to open
       stats.state = 'open';
@@ -132,11 +131,9 @@ export class CircuitBreaker {
       stats.failures = 0;
       stats.successes = 0;
       stats.state = 'closed';
-      console.log(`Circuit breaker reset for endpoint: ${endpoint}`);
     } else {
       // Reset all endpoints
       this.endpoints.clear();
-      console.log('All circuit breakers reset');
     }
   }
 

@@ -1,5 +1,6 @@
 // Search API service
 import { apiClient } from './client';
+import { privacyClient } from './privacyClient';
 import { API_ENDPOINTS } from '@/types/api';
 import { SearchResult, SearchResponse, SearchParams } from '@/types/search';
 import { 
@@ -7,6 +8,7 @@ import {
   MWMBLSearchResponse, 
   HealthCheckResponse 
 } from '@/types/api';
+// Note: We can't use React hooks in a class, so we'll handle privacy settings differently
 
 // Transform MWMBL result to our SearchResult format
 function transformMWMBLResult(result: any, index: number): SearchResult {
@@ -31,6 +33,13 @@ const resultsCache = new Map<string, any[]>();
 
 // Search service class
 export class SearchAPI {
+  // Get the appropriate API client based on privacy settings
+  private getClient() {
+    // For now, always use privacy client to ensure privacy features are available
+    // In the future, this could check localStorage directly or receive settings as parameter
+    return privacyClient;
+  }
+
   // Main search function
   async search(params: SearchParams): Promise<SearchResponse> {
     const { query, page = 1, limit = 10, filters } = params;
@@ -46,7 +55,6 @@ export class SearchAPI {
     
     if (allResults && page > 1) {
       // Use cached results for pagination
-      console.log(`📊 Using cached results for page ${page}`);
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
       const paginatedResults = allResults.slice(startIndex, endIndex);
@@ -64,33 +72,13 @@ export class SearchAPI {
 
     // Try multiple search engines for better diversity
     try {
-      console.log(`🔍 Multi-source search for: "${query}"`);
-      
-      // Use multiple search sources for better diversity
+      // Use MWMBL as primary search source (others have CORS issues)
       const searchSources = [
         {
           name: 'MWMBL',
           endpoints: [
             `https://api.mwmbl.org/search?s=${encodeURIComponent(query.trim())}`,
             `https://mwmbl.org/api/v1/search/?s=${encodeURIComponent(query.trim())}`,
-          ]
-        },
-        {
-          name: 'DuckDuckGo',
-          endpoints: [
-            `https://api.duckduckgo.com/?q=${encodeURIComponent(query.trim())}&format=json&no_redirect=1&no_html=1&skip_disambig=1`,
-          ]
-        },
-        {
-          name: 'Brave',
-          endpoints: [
-            `https://search.brave.com/api/suggest?q=${encodeURIComponent(query.trim())}`,
-          ]
-        },
-        {
-          name: 'Startpage',
-          endpoints: [
-            `https://www.startpage.com/sp/search?query=${encodeURIComponent(query.trim())}&format=json&output=jsonp`,
           ]
         }
       ];
@@ -100,63 +88,28 @@ export class SearchAPI {
       
       // Try each search source
       for (const source of searchSources) {
-        console.log(`🌐 Trying source: ${source.name}`);
-        
         for (const endpoint of source.endpoints) {
           try {
-            console.log(`🌐 Trying endpoint: ${endpoint}`);
-            
-            const data = await apiClient.request(endpoint, {
+            const client = this.getClient();
+            const data = await client.request(endpoint, {
               method: 'GET',
               headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'Noexplorer/1.0',
+                // User-Agent will be handled by privacy client if enabled
               },
               timeout: 8000,
               priority: 'high', // Search requests have high priority
               useQueue: true,
               cache: false, // Don't cache search API responses
             });
-            console.log(`📋 ${source.name} Response:`, data);
             
-            // Handle different response formats
+            // Handle MWMBL response format
             let results = [];
-            if (source.name === 'MWMBL') {
-              if (Array.isArray(data)) {
-                results = data;
-              } else if (data.results && Array.isArray(data.results)) {
-                results = data.results;
-              }
-            } else if (source.name === 'DuckDuckGo') {
-              // DuckDuckGo Instant Answer API
-              if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-                results = data.RelatedTopics.filter((topic: any) => topic.FirstURL && topic.Text);
-              }
-              // Also add Abstract if available
-              if (data.Abstract && data.AbstractURL) {
-                results.unshift({
-                  FirstURL: data.AbstractURL,
-                  Text: data.Abstract,
-                  title: data.Heading || query,
-                });
-              }
-            } else if (source.name === 'Brave') {
-              // Brave Search API (suggestions - limited but CORS-friendly)
-              if (Array.isArray(data) && data.length > 1 && Array.isArray(data[1])) {
-                results = data[1].map((suggestion: string, index: number) => ({
-                  title: suggestion,
-                  url: `https://search.brave.com/search?q=${encodeURIComponent(suggestion)}`,
-                  snippet: `Search for: ${suggestion}`,
-                }));
-              }
-            } else if (source.name === 'Startpage') {
-              // Startpage (privacy-focused proxy for Google results)
-              if (data.results && Array.isArray(data.results)) {
-                results = data.results;
-              }
+            if (Array.isArray(data)) {
+              results = data;
+            } else if (data.results && Array.isArray(data.results)) {
+              results = data.results;
             }
-            
-            console.log(`📊 Found ${results.length} results from ${source.name}`);
             
             // Add source metadata to results
             const resultsWithSource = results.map((result: any) => ({
@@ -172,14 +125,11 @@ export class SearchAPI {
             }
             
           } catch (endpointError) {
-            console.warn(`❌ Endpoint ${endpoint} failed:`, endpointError);
             lastError = endpointError;
             continue; // Try next endpoint
           }
         }
       }
-      
-      console.log(`📊 Total results from all sources: ${allResults.length}`);
       
       // If no results from any source, throw error
       if (allResults.length === 0) {
@@ -217,28 +167,13 @@ export class SearchAPI {
           return String(value);
         };
 
-        // Handle different result formats based on source
-        let title = 'Untitled';
-        let url = '';
-        let snippet = '';
+        // Handle MWMBL result format
+        const title = extractText(result.title || result.name || result.heading) || 'Untitled';
+        const url = String(result.url || result.link || '');
+        const snippet = extractText(result.extract || result.snippet || result.description || result.content) || '';
         
-        if (result._source === 'DuckDuckGo') {
-          title = result.title || extractText(result.Text) || 'Untitled';
-          url = result.FirstURL || result.url || '';
-          snippet = extractText(result.Text) || '';
-        } else if (result._source === 'Brave') {
-          title = result.title || 'Untitled';
-          url = result.url || '';
-          snippet = result.snippet || '';
-        } else if (result._source === 'Startpage') {
-          title = result.title || 'Untitled';
-          url = result.url || '';
-          snippet = result.snippet || result.description || '';
-        } else {
-          title = extractText(result.title || result.name || result.heading) || 'Untitled';
-          url = String(result.url || result.link || '');
-          snippet = extractText(result.extract || result.snippet || result.description || result.content) || '';
-        }
+        // Extract thumbnail image
+        const thumbnail = result.image_url || result.thumbnail || result.imageUrl || undefined;
         
         // Extract domain safely
         let domain = 'unknown';
@@ -247,7 +182,7 @@ export class SearchAPI {
             domain = new URL(url).hostname;
           }
         } catch (e) {
-          console.warn('Invalid URL:', url);
+          // Invalid URL
         }
         
         return {
@@ -259,6 +194,7 @@ export class SearchAPI {
           timestamp: new Date(),
           relevance: result.score || result.rank || Math.random(),
           type: 'web' as const,
+          thumbnail,
           metadata: {
             score: result.score || result.rank,
             source: result._source?.toLowerCase() || 'unknown',
@@ -276,11 +212,7 @@ export class SearchAPI {
         return true;
       });
 
-      console.log(`✅ Transformed ${transformedResults.length} valid results`);
-
       const deduplicatedResults = this.deduplicateAndImproveResults(transformedResults);
-      console.log(`🔄 After deduplication: ${deduplicatedResults.length} results`);
-
       resultsCache.set(cacheKey, deduplicatedResults);
 
       const startIndex = (page - 1) * limit;
@@ -298,7 +230,7 @@ export class SearchAPI {
       };
 
     } catch (error) {
-      console.error('🚨 All search API attempts failed:', error);
+      // All search API attempts failed
       
       // Return empty results instead of mock data
       return {
@@ -320,7 +252,8 @@ export class SearchAPI {
     }
 
     try {
-      const response = await apiClient.get<{ suggestions: string[] }>(
+      const client = this.getClient();
+      const response = await client.get<{ suggestions: string[] }>(
         API_ENDPOINTS.suggestions,
         {
           params: { q: query.trim() },
@@ -341,7 +274,8 @@ export class SearchAPI {
   // Check API health
   async checkHealth(): Promise<HealthCheckResponse> {
     try {
-      const response = await apiClient.get<HealthCheckResponse>(
+      const client = this.getClient();
+      const response = await client.get<HealthCheckResponse>(
         API_ENDPOINTS.health,
         { cache: false, timeout: 5000 }
       );
@@ -368,7 +302,8 @@ export class SearchAPI {
   // Get search statistics (optional)
   async getStats(): Promise<{ totalSearches: number; avgResponseTime: number }> {
     try {
-      const response = await apiClient.get<{
+      const client = this.getClient();
+      const response = await client.get<{
         total_searches: number;
         avg_response_time: number;
       }>(API_ENDPOINTS.stats);

@@ -36,9 +36,6 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement
-
-    // Debug: log current classes
-    console.log("Before cleanup:", root.className)
     
     root.classList.remove("light", "dark")
 
@@ -48,20 +45,15 @@ export function ThemeProvider({
         ? "dark"
         : "light"
 
-      console.log("System theme:", systemTheme)
       root.classList.add(systemTheme)
-      console.log("After system theme:", root.className)
       return
     }
 
-    console.log("Manual theme:", theme)
     root.classList.add(theme)
-    console.log("After manual theme:", root.className)
     
     // Force dark theme if it's the default
     if (defaultTheme === "dark" && theme === "dark") {
       root.classList.add("dark")
-      console.log("Forced dark theme:", root.className)
     }
   }, [theme, defaultTheme])
 
