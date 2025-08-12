@@ -11,7 +11,6 @@ import Footer from "@/components/layout/Footer";
 import Search from "@/pages/Search";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ToastManager from "@/components/ToastManager";
-// import GlitchBackground from "@/components/GlitchBackground";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { useAppStore } from "@/store/appStore";
 import { useEffect } from "react";

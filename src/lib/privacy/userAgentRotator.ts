@@ -170,34 +170,31 @@ class UserAgentRotator {
   }
 
   /**
-   * Generate additional headers that match the user agent
+   * Generate additional headers that match the user agent (API-safe version)
    */
   generateMatchingHeaders(userAgent: string): Record<string, string> {
     const headers: Record<string, string> = {
       'User-Agent': userAgent,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept': 'application/json,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
+      'Accept-Encoding': 'gzip, deflate',
       'DNT': '1',
-      'Connection': 'keep-alive',
-      'Upgrade-Insecure-Requests': '1',
+      // Removed problematic headers for API requests:
+      // - 'Connection': 'keep-alive' (handled by fetch)
+      // - 'Upgrade-Insecure-Requests': '1' (causes CORS issues)
     };
 
-    // Browser-specific modifications
-    if (userAgent.includes('Chrome')) {
-      headers['Sec-CH-UA'] = '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"';
-      headers['Sec-CH-UA-Mobile'] = userAgent.includes('Mobile') ? '?1' : '?0';
-      headers['Sec-CH-UA-Platform'] = this.getPlatformFromUserAgent(userAgent);
-      headers['Sec-Fetch-Site'] = 'none';
-      headers['Sec-Fetch-Mode'] = 'navigate';
-      headers['Sec-Fetch-User'] = '?1';
-      headers['Sec-Fetch-Dest'] = 'document';
-    } else if (userAgent.includes('Firefox')) {
-      // Firefox doesn't send Sec-CH-* headers
-      delete headers['Sec-CH-UA'];
-      delete headers['Sec-CH-UA-Mobile'];
-      delete headers['Sec-CH-UA-Platform'];
-    }
+    // Browser-specific modifications (disabled for API requests to avoid CORS issues)
+    // Sec-* headers cause CORS preflight failures with many APIs
+    // if (userAgent.includes('Chrome')) {
+    //   headers['Sec-CH-UA'] = '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"';
+    //   headers['Sec-CH-UA-Mobile'] = userAgent.includes('Mobile') ? '?1' : '?0';
+    //   headers['Sec-CH-UA-Platform'] = this.getPlatformFromUserAgent(userAgent);
+    //   headers['Sec-Fetch-Site'] = 'none';
+    //   headers['Sec-Fetch-Mode'] = 'navigate';
+    //   headers['Sec-Fetch-User'] = '?1';
+    //   headers['Sec-Fetch-Dest'] = 'document';
+    // }
 
     return headers;
   }

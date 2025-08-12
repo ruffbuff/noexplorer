@@ -267,27 +267,22 @@ class TrafficObfuscator {
 
   /**
    * Generate decoy headers to mask real request patterns
+   * Note: Disabled custom headers to avoid CORS issues with third-party APIs
    */
   generateDecoyHeaders(): Record<string, string> {
     const decoyHeaders: Record<string, string> = {};
     
-    // Random order of common headers
-    const commonHeaders = [
-      'X-Forwarded-For',
-      'X-Real-IP', 
-      'X-Client-IP',
-      'CF-Connecting-IP',
-    ];
-
-    // Add some random headers with fake values
-    if (Math.random() > 0.5) {
-      decoyHeaders['X-Custom-Client'] = Math.random().toString(36);
+    // CORS-safe headers only - most custom headers cause preflight failures
+    // with third-party APIs like MWMBL
+    
+    // Add timing variation header (usually allowed)
+    if (Math.random() > 0.8) {
+      decoyHeaders['Cache-Control'] = 'no-cache';
     }
     
-    if (Math.random() > 0.7) {
-      decoyHeaders['X-Session-ID'] = Math.random().toString(36).substring(2);
-    }
-
+    // Keep request patterns realistic without adding problematic headers
+    // X-Custom-Client and X-Session-ID cause CORS preflight failures
+    
     return decoyHeaders;
   }
 
