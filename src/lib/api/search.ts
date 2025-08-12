@@ -90,11 +90,20 @@ export class SearchAPI {
 
     // Try multiple search engines for better diversity
     try {
-      // Use MWMBL as primary search source (others have CORS issues)
+      // Determine if we're in production
+      const isProduction = typeof window !== 'undefined' && 
+                         window.location.hostname !== 'localhost' && 
+                         !window.location.hostname.includes('127.0.0.1');
+
+      // Use different endpoints based on environment
       const searchSources = [
         {
           name: 'MWMBL',
-          endpoints: [
+          endpoints: isProduction ? [
+            // In production, use our Vercel API proxy to avoid CORS
+            `/api/search?q=${encodeURIComponent(query.trim())}`,
+          ] : [
+            // In development, use direct MWMBL endpoints
             `https://api.mwmbl.org/search?s=${encodeURIComponent(query.trim())}`,
             `https://mwmbl.org/api/v1/search/?s=${encodeURIComponent(query.trim())}`,
           ]
@@ -121,12 +130,17 @@ export class SearchAPI {
               cache: false, // Don't cache search API responses
             });
             
-            // Handle MWMBL response format
+            // Handle different response formats
             let results = [];
             if (Array.isArray(data)) {
+              // Direct MWMBL response (development)
               results = data;
             } else if (data.results && Array.isArray(data.results)) {
+              // Wrapped MWMBL response (from our API proxy)
               results = data.results;
+            } else if (data.success && data.results) {
+              // Our Vercel API proxy response format
+              results = Array.isArray(data.results) ? data.results : [];
             }
             
             // Add source metadata to results
@@ -300,8 +314,18 @@ export class SearchAPI {
 
     } catch (error) {
       // All search API attempts failed
+      console.error('[SEARCH] All search attempts failed:', error);
       
-      // Return empty results instead of mock data
+      // In production, provide helpful error information
+      if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+        console.error('[SEARCH] Production search failed. This might be due to:');
+        console.error('- CORS restrictions in production environment');
+        console.error('- Network policies blocking external API calls');
+        console.error('- MWMBL API being unavailable');
+        console.error('- Vercel serverless function limitations');
+      }
+      
+      // Return empty results with error context
       return {
         results: [],
         totalCount: 0,
@@ -310,6 +334,8 @@ export class SearchAPI {
         searchTime: 0,
         suggestions: [],
         query: query.trim(),
+        // Add error metadata for debugging
+        error: error instanceof Error ? error.message : 'Search failed',
       };
     }
   }
